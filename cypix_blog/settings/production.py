@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import dj_database_url
 from .base import MIDDLEWARE
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'
@@ -16,18 +17,25 @@ ALLOWED_HOSTS = [
 ]
 
 # Database
-import dj_database_url
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB', 'railway'),
-        'USER': os.environ.get('PGUSER', 'postgres'),
-        'PASSWORD': os.environ.get('PGPASSWORD', ''),
-        'HOST': os.environ.get('PGHOST', 'postgres.railway.internal'),
-        'PORT': os.environ.get('PGPORT', '5432'),
+# Prefer a single DATABASE_URL if provided by Railway; otherwise fall back to
+# individual PG*/POSTGRES_* environment variables.
+_database_url = os.environ.get('DATABASE_URL')
+if _database_url:
+    DATABASES = {
+        'default': dj_database_url.parse(_database_url, conn_max_age=600)
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('PGDATABASE') or os.environ.get('POSTGRES_DB', 'railway'),
+            'USER': os.environ.get('PGUSER') or os.environ.get('POSTGRES_USER', 'postgres'),
+            'PASSWORD': os.environ.get('PGPASSWORD') or os.environ.get('POSTGRES_PASSWORD', ''),
+            'HOST': os.environ.get('PGHOST') or os.environ.get('POSTGRES_HOST', 'postgres.railway.internal'),
+            'PORT': os.environ.get('PGPORT') or os.environ.get('POSTGRES_PORT', '5432'),
+        }
+    }
 
 # Static files configuration
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
@@ -41,6 +49,12 @@ MEDIA_URL = '/media/'
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+
+# Ensure CSRF works for deployed domains
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.railway.app',
+    'https://cypix.cc',
+]
 
 # Add whitenoise middleware
 if 'whitenoise.middleware.WhiteNoiseMiddleware' not in MIDDLEWARE:
