@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load static wagtailcore_tags %}
+
+{% block body_class %}template-homepage{% endblock %}
+
+{% block content %}
+<h1>{{ page.title }}</h1>
+<div class="content">
+    {{ page.body|richtext|default:"Welcome to my blog! Content coming soon." }}
+</div>
+    
+    {% with blog_index=page.get_site.root_page.get_children|first %}
+        {% with blog_posts=blog_index.get_children.live.specific %}
+            {% if blog_posts %}
+                <div class="blog-posts">
+                    {% for post in blog_posts %}
+                        <div class="blog-post">
+                            <h2><a href="{% pageurl post %}">{{ post.title }}</a></h2>
+                            {% if post.date %}
+                                <div class="date">{{ post.date|date:"d.m.y H:i" }}</div>
+                            {% endif %}
+                            {% if post.intro %}
+                                <div class="intro">{{ post.intro }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+    {% endwith %}
+</div>
+{% endblock content %}
